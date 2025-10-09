@@ -1,0 +1,36 @@
+{
+  "name": "css-mcp",
+  "version": "1.0.2",
+  "description": "An MCP server for looking up CSS properties on MDN",
+  "type": "module",
+  "bin": {
+    "css-mcp": "src/server.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node src/server.js --self-test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^12.4.1",
+    "turndown": "^7.2.1",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "css",
+    "mdn"
+  ],
+  "author": "Scott Tolinski",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  }
+}

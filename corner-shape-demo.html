@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS corner-shape Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #ffcd33;
+      color: #333;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .compat-notice {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 30px;
+      display: none;
+    }
+
+    .compat-notice.show {
+      display: block;
+    }
+
+    .compat-notice h3 {
+      color: #856404;
+      margin-bottom: 10px;
+    }
+
+    .content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .controls {
+      display: grid;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .control-group {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #495057;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #dee2e6;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    input[type="range"] {
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .value-display {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      margin-left: 10px;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .demo-box {
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease;
+    }
+
+    .demo-box:hover {
+      transform: translateY(-5px);
+    }
+
+    .demo-box code {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    .interactive-demo {
+      background: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800') center/cover;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .interactive-demo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(102, 126, 234, 0.7);
+      backdrop-filter: blur(5px);
+    }
+
+    .interactive-demo div {
+      position: relative;
+      z-index: 1;
+    }
+
+    h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .code-block {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    .code-block .property {
+      color: #e06c75;
+    }
+
+    .code-block .value {
+      color: #98c379;
+    }
+
+    /* Browser compatibility table */
+    .compat-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .compat-table th,
+    .compat-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .compat-table th {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+    }
+
+    .compat-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .support-yes {
+      color: #28a745;
+      font-weight: bold;
+    }
+
+    .support-no {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .support-partial {
+      color: #ffc107;
+      font-weight: bold;
+    }
+
+    @supports not (corner-shape: round) {
+      .compat-notice {
+        display: block !important;
+      }
+
+      .demo-box {
+        opacity: 0.5;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>CSS corner-shape Demo</h1>
+      <p>Custom corner shapes with the new corner-shape property</p>
+      <span class="badge">⚠️ Experimental Feature</span>
+    </header>
+
+    <div class="compat-notice" id="compatNotice">
+      <h3>⚠️ Browser Compatibility Notice</h3>
+      <p>Your browser may not support the <code>corner-shape</code> property. This feature is experimental and currently has limited support. For the best experience, use the latest version of Chrome or Safari.</p>
+    </div>
+
+    <div class="content">
+      <section>
+        <h2>Interactive Demo</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label for="shapeSelect">
+              Select Corner Shape:
+              <span class="value-display" id="shapeValue">squircle</span>
+            </label>
+            <select id="shapeSelect">
+              <optgroup label="Keywords">
+                <option value="square">square (superellipse(infinity))</option>
+                <option value="squircle" selected>squircle (superellipse(2))</option>
+                <option value="round">round (superellipse(1))</option>
+                <option value="bevel">bevel (superellipse(0))</option>
+                <option value="scoop">scoop (superellipse(-1))</option>
+                <option value="notch">notch (superellipse(-infinity))</option>
+              </optgroup>
+              <optgroup label="Custom Functions">
+                <option value="superellipse(3)">superellipse(3) - Very Sharp</option>
+                <option value="superellipse(1.5)">superellipse(1.5)</option>
+                <option value="superellipse(0.5)">superellipse(0.5) - Soft Bevel</option>
+                <option value="superellipse(-0.5)">superellipse(-0.5) - Gentle Scoop</option>
+                <option value="superellipse(-1.5)">superellipse(-1.5)</option>
+                <option value="superellipse(-3)">superellipse(-3) - Deep Scoop</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="radiusSlider">
+              Border Radius:
+              <span class="value-display" id="radiusValue">45px</span>
+            </label>
+            <input type="range" id="radiusSlider" min="0" max="100" value="45" step="5">
+          </div>
+        </div>
+
+        <div class="demo-grid">
+          <div class="demo-box interactive-demo" id="interactiveBox">
+            <div>
+              <strong>Interactive Demo</strong>
+              <code id="currentStyles">border-radius: 45px;<br>corner-shape: squircle;</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div><span class="property">border-radius</span>: <span class="value" id="cssRadius">45px</span>;</div>
+          <div><span class="property">corner-shape</span>: <span class="value" id="cssShape">squircle</span>;</div>
+        </div>
+      </section>
+
+      <section style="margin-top: 40px;">
+        <h2>All Corner Shapes</h2>
+        <div class="demo-grid">
+          <div class="demo-box" style="border-radius: 40px; corner-shape: square;">
+            <strong>square</strong>
+            <code>superellipse(infinity)</code>
+          </div>
+          <div class="demo-box" style="border-radius: 40px; corner-shape: squircle;">
+            <strong>squircle</strong>
+            <code>superellipse(2)</code>
+          </div>
+          <div class="demo-box" style="border-radius: 40px; corner-shape: round;">
+            <strong>round</strong>
+            <code>superellipse(1)</code>
+          </div>
+          <div class="demo-box" style="border-radius: 40px; corner-shape: bevel;">
+            <strong>bevel</strong>
+            <code>superellipse(0)</code>
+          </div>
+          <div class="demo-box" style="border-radius: 40px; corner-shape: scoop;">
+            <strong>scoop</strong>
+            <code>superellipse(-1)</code>
+          </div>
+          <div class="demo-box" style="border-radius: 40px; corner-shape: notch;">
+            <strong>notch</strong>
+            <code>superellipse(-infinity)</code>
+          </div>
+        </div>
+      </section>
+
+      <section style="margin-top: 40px;">
+        <h2>Browser Compatibility</h2>
+        <table class="compat-table">
+          <thead>
+            <tr>
+              <th>Browser</th>
+              <th>Version</th>
+              <th>Support</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chrome</td>
+              <td>133+</td>
+              <td class="support-yes">✓ Supported</td>
+            </tr>
+            <tr>
+              <td>Edge</td>
+              <td>133+</td>
+              <td class="support-yes">✓ Supported</td>
+            </tr>
+            <tr>
+              <td>Safari</td>
+              <td>Technology Preview</td>
+              <td class="support-partial">⚠️ Behind flag</td>
+            </tr>
+            <tr>
+              <td>Firefox</td>
+              <td>—</td>
+              <td class="support-no">✗ Not supported</td>
+            </tr>
+            <tr>
+              <td>Opera</td>
+              <td>—</td>
+              <td class="support-no">✗ Not supported</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top: 20px; color: #6c757d; font-size: 0.9rem;">
+          <strong>Note:</strong> This is an experimental feature. Browser support is limited and may change.
+          Check <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/corner-shape#browser_compatibility" target="_blank" style="color: #667eea;">MDN</a> for the latest compatibility information.
+        </p>
+      </section>
+
+      <section style="margin-top: 40px;">
+        <h2>Key Points</h2>
+        <ul style="line-height: 1.8; padding-left: 20px;">
+          <li><strong>Requires border-radius:</strong> corner-shape only works when border-radius is non-zero</li>
+          <li><strong>Follows the shape:</strong> background, border, outline, box-shadow, and overflow all follow the corner shape</li>
+          <li><strong>Can animate:</strong> Smoothly animates between different superellipse values</li>
+          <li><strong>Individual corners:</strong> Use corner-top-left-shape, corner-top-right-shape, etc. to target specific corners</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const select = document.getElementById('shapeSelect');
+    const slider = document.getElementById('radiusSlider');
+    const box = document.getElementById('interactiveBox');
+    const shapeValue = document.getElementById('shapeValue');
+    const radiusValue = document.getElementById('radiusValue');
+    const currentStyles = document.getElementById('currentStyles');
+    const cssShape = document.getElementById('cssShape');
+    const cssRadius = document.getElementById('cssRadius');
+
+    function updateDemo() {
+      const shape = select.value;
+      const radius = slider.value + 'px';
+
+      box.style.cornerShape = shape;
+      box.style.borderRadius = radius;
+
+      shapeValue.textContent = shape;
+      radiusValue.textContent = radius;
+      cssShape.textContent = shape;
+      cssRadius.textContent = radius;
+      currentStyles.innerHTML = `border-radius: ${radius};<br>corner-shape: ${shape};`;
+    }
+
+    select.addEventListener('change', updateDemo);
+    slider.addEventListener('input', updateDemo);
+
+    // Check browser support
+    if (!CSS.supports('corner-shape', 'round')) {
+      document.getElementById('compatNotice').classList.add('show');
+    }
+
+    // Initial update
+    updateDemo();
+  </script>
+</body>
+</html>

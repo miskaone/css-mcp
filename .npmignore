@@ -1,0 +1,25 @@
+# Development files
+corner-shape-demo.html
+.DS_Store
+
+# Cache and local data
+.cache/
+*.db
+*.db-shm
+*.db-wal
+
+# Claude Code specific
+.claude/
+
+# Git
+.git/
+.gitignore
+
+# Node
+node_modules/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
