@@ -30,6 +30,17 @@ Install via the Claude Code CLI:
 claude mcp add css -- npx -y css-mcp
 ```
 
+### For VS Code 
+
+One click install:
+
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=css-mcp&config=%7B%22name%22%3A%22css-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22css%22%5D%2C%22env%22%3A%7B%7D%7D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=css-mcp&config=%7B%22name%22%3A%22css%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22css-mcp%22%5D%2C%22env%22%3A%7B%7D%7D&quality=insiders)
+
+Install via VS Code CLI:
+
+code --add-mcp '{\"name\":\"css\",\"command\":\"npx\",\"args\":[\"-y\",\"css-mcp\"],\"env\":{}}'
+
 ### For MCP Clients (Claude Desktop, etc.)
 
 Add to your MCP settings configuration:
