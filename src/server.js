@@ -12,13 +12,19 @@ import Database from "better-sqlite3";
 import { analyze } from "@projectwallace/css-analyzer";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { mkdirSync, existsSync } from "fs";
+import { mkdirSync, existsSync, readFileSync, statSync } from "fs";
 import { homedir } from "os";
+import fg from "fast-glob";
 
 // ---------- cache setup ----------
 const CACHE_DIR = join(homedir(), ".cache", "css-mcp");
 const CACHE_DB = join(CACHE_DIR, "cache.db");
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days (MDN docs don't change often)
+
+// ---------- input limits ----------
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB combined
+const MAX_FILE_COUNT = 500; // Max number of CSS files
 
 // Ensure cache directory exists
 if (!existsSync(CACHE_DIR)) {
@@ -116,12 +122,25 @@ const normalize_slug_to_json = (slug) => {
 };
 
 async function fetch_json(url, init) {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`fetch_failed ${res.status} ${res.statusText} ${url}\n${text}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`fetch_failed ${res.status} ${res.statusText} ${url}\n${text}`);
+    }
+    return res.json();
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err.name === 'AbortError') {
+      throw new Error(`Request timeout after 10s: ${url}`);
+    }
+    throw err;
   }
-  return res.json();
 }
 
 function resolve_bcd_feature(raw_bcd, bcd_id) {
@@ -185,6 +204,157 @@ async function get_bcd_impl({ bcd_id }) {
   return result;
 }
 
+// Create a curated summary of key metrics (much smaller than full analysis)
+function createAnalysisSummary(analysis) {
+  return {
+    stylesheet: {
+      sourceLinesOfCode: analysis.stylesheet?.sourceLinesOfCode,
+      size: analysis.stylesheet?.size,
+    },
+    rules: {
+      total: analysis.rules?.total,
+    },
+    selectors: {
+      total: analysis.selectors?.total,
+      averageComplexity: analysis.selectors?.complexity?.average,
+      maxComplexity: analysis.selectors?.complexity?.max,
+      averageSpecificity: analysis.selectors?.specificity?.average,
+      maxSpecificity: analysis.selectors?.specificity?.max,
+    },
+    declarations: {
+      total: analysis.declarations?.total,
+      unique: analysis.declarations?.unique?.length,
+    },
+    properties: {
+      total: analysis.properties?.total,
+      unique: analysis.properties?.unique?.length,
+    },
+    colors: {
+      total: analysis.colors?.total,
+      unique: analysis.colors?.unique?.length,
+      uniqueColors: analysis.colors?.unique || [],
+    },
+    fontSizes: {
+      total: analysis.fontSizes?.total,
+      unique: analysis.fontSizes?.unique?.length,
+      uniqueSizes: analysis.fontSizes?.unique || [],
+    },
+  };
+}
+
+async function analyze_project_css_impl({ path, includeFullAnalysis = false, exclude = [] }) {
+  let cssFiles = [];
+
+  // Default exclusions - common patterns to skip
+  const defaultExclusions = ["**/node_modules/**", "**/*.min.css"];
+  const allExclusions = [...defaultExclusions, ...exclude];
+
+  // Check if path exists
+  try {
+    const stats = statSync(path);
+
+    if (stats.isFile()) {
+      // Single file provided
+      cssFiles = [path];
+    } else if (stats.isDirectory()) {
+      // Directory - find all CSS files recursively
+      cssFiles = await fg("**/*.css", {
+        cwd: path,
+        absolute: true,
+        ignore: allExclusions,
+      });
+    }
+  } catch (err) {
+    // Path doesn't exist or is a glob pattern - treat as glob
+    cssFiles = await fg(path, {
+      absolute: true,
+      ignore: allExclusions,
+    });
+  }
+
+  if (cssFiles.length === 0) {
+    throw new Error(`No CSS files found for path: ${path}`);
+  }
+
+  // Check file count limit
+  if (cssFiles.length > MAX_FILE_COUNT) {
+    throw new Error(
+      `Too many CSS files found: ${cssFiles.length} (max: ${MAX_FILE_COUNT}). Use more specific path or glob pattern.`
+    );
+  }
+
+  // Sort files for consistent order (alphabetically)
+  cssFiles.sort();
+
+  // Read and combine all CSS files
+  let totalSize = 0;
+  const filesContent = cssFiles.map((file) => {
+    try {
+      const fileSize = statSync(file).size;
+
+      // Check individual file size
+      if (fileSize > MAX_FILE_SIZE) {
+        return {
+          path: file,
+          error: `File too large: ${(fileSize / 1024 / 1024).toFixed(2)}MB (max: ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+        };
+      }
+
+      // Check total size
+      totalSize += fileSize;
+      if (totalSize > MAX_TOTAL_SIZE) {
+        return {
+          path: file,
+          error: `Total size limit exceeded: ${(totalSize / 1024 / 1024).toFixed(2)}MB (max: ${MAX_TOTAL_SIZE / 1024 / 1024}MB)`,
+        };
+      }
+
+      return {
+        path: file,
+        content: readFileSync(file, "utf-8"),
+        size: fileSize,
+      };
+    } catch (err) {
+      return {
+        path: file,
+        error: err.message,
+      };
+    }
+  });
+
+  // Filter out files with errors
+  const validFiles = filesContent.filter((f) => !f.error);
+  const errorFiles = filesContent.filter((f) => f.error);
+
+  if (validFiles.length === 0) {
+    throw new Error("No valid CSS files could be read");
+  }
+
+  // Combine all CSS
+  const combinedCss = validFiles.map((f) => f.content).join("\n\n");
+
+  // Analyze combined CSS
+  const fullAnalysis = analyze(combinedCss);
+  const analysisOutput = includeFullAnalysis
+    ? fullAnalysis
+    : createAnalysisSummary(fullAnalysis);
+
+  // Return files first (more prominent), then analysis
+  return {
+    files: {
+      total: cssFiles.length,
+      analyzed: validFiles.length,
+      errors: errorFiles.length,
+      list: validFiles.map((f) => ({ path: f.path, size: f.size })),
+      errorList: errorFiles.length > 0 ? errorFiles : undefined,
+    },
+    summary: analysisOutput,
+    note: includeFullAnalysis
+      ? "Full analysis included (150+ metrics)"
+      : "Summary metrics only. Use includeFullAnalysis: true for complete data.",
+  };
+}
+
 // ---------- self-test ----------
 async function self_test() {
   // Test with simple slug (auto-normalized)
@@ -231,11 +401,32 @@ async function self_test() {
     colors_total: analysis.colors?.total,
     has_metrics: !!analysis.__meta__,
   });
+
+  // Test analyze_project_css (summary mode - default)
+  const projectAnalysis = await analyze_project_css_impl({ path: "test-fixtures" });
+  console.error("analyze_project_css ok (summary):", {
+    files_found: projectAnalysis.files.total,
+    files_analyzed: projectAnalysis.files.analyzed,
+    has_summary: !!projectAnalysis.summary,
+    rules_total: projectAnalysis.summary?.rules?.total,
+    colors_unique: projectAnalysis.summary?.colors?.unique,
+  });
+
+  // Test with full analysis
+  const projectAnalysisFull = await analyze_project_css_impl({
+    path: "test-fixtures",
+    includeFullAnalysis: true,
+  });
+  console.error("analyze_project_css ok (full):", {
+    files_found: projectAnalysisFull.files.total,
+    has_full_analysis: !!projectAnalysisFull.summary?.stylesheet,
+    note: projectAnalysisFull.note,
+  });
 }
 
 // ---------- stdio server ----------
 async function start() {
-  const server = new McpServer({ name: "css", version: "1.1.0" });
+  const server = new McpServer({ name: "css", version: "1.3.0" });
 
   server.tool(
     "get_docs",
@@ -270,10 +461,38 @@ async function start() {
 
   server.tool(
     "analyze_css",
-    'Analyze CSS code for quality, complexity, and design patterns. Provides 150+ metrics including selector complexity, specificity, color usage, font sizes, property patterns, and code quality indicators. Use this to identify issues, suggest improvements, or audit CSS codebases.',
-    { css: z.string().min(1) },
-    async ({ css }) => {
-      const result = analyze(css);
+    'Analyze CSS code for quality, complexity, and design patterns. Returns curated summary by default (lightweight, ~1-2k tokens) or full 150+ metrics with summaryOnly: false. Use this to identify issues, suggest improvements, or audit CSS codebases.',
+    {
+      css: z.string().min(1),
+      summaryOnly: z.boolean().optional(),
+    },
+    async ({ css, summaryOnly = true }) => {
+      const fullAnalysis = analyze(css);
+      const analysisOutput = summaryOnly
+        ? createAnalysisSummary(fullAnalysis)
+        : fullAnalysis;
+
+      const result = {
+        analysis: analysisOutput,
+        note: summaryOnly
+          ? "Summary metrics only. Use summaryOnly: false for complete 150+ metrics."
+          : "Full analysis included (150+ metrics)",
+      };
+
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "analyze_project_css",
+    'Analyze all CSS files in a project directory. Finds all .css files recursively, combines them, and analyzes as a whole. Accepts: single file path, directory path, or glob pattern (e.g., "dist/**/*.css"). Framework-agnostic - analyzes built CSS output from any framework (SvelteKit, React, Vue, etc.). Automatically excludes node_modules and .min.css files. Returns file list + curated summary metrics by default (lightweight). Use includeFullAnalysis: true for complete 150+ metrics (uses more tokens).',
+    {
+      path: z.string().min(1),
+      includeFullAnalysis: z.boolean().optional(),
+      exclude: z.array(z.string()).optional(),
+    },
+    async ({ path, includeFullAnalysis, exclude }) => {
+      const result = await analyze_project_css_impl({ path, includeFullAnalysis, exclude });
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

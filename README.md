@@ -126,48 +126,132 @@ get_browser_compatibility({ bcd_id: "css.selectors.has" });
 
 #### `analyze_css`
 
-Analyze CSS code for quality, complexity, and design patterns. Returns 150+ metrics including stylesheet metadata, selector complexity, specificity analysis, color palettes, font sizes, and more.
+Analyze CSS code for quality, complexity, and design patterns. Returns **curated summary by default** (lightweight, ~1-2k tokens). Use `summaryOnly: false` for complete 150+ metrics (uses ~10k+ tokens).
 
 **Parameters:**
 
-- `css` (string) - CSS code to analyze
+- `css` (string, required) - CSS code to analyze
+- `summaryOnly` (boolean, optional) - Return summary instead of full analysis. Default: `true`
 
-**Example:**
+**Examples:**
 
 ```javascript
+// Summary mode (default, lightweight)
 analyze_css({
   css: `
     .container {
       display: grid;
       color: #3b82f6;
     }
-  `,
+  `
+});
+
+// Full analysis with all 150+ metrics
+analyze_css({
+  css: "...",
+  summaryOnly: false
 });
 ```
 
-**Returns:**
+**Returns (default summary):**
 
 ```json
 {
-  "stylesheet": {
-    "sourceLinesOfCode": 5,
-    "size": 72
+  "analysis": {
+    "stylesheet": {
+      "sourceLinesOfCode": 5,
+      "size": 72
+    },
+    "rules": { "total": 1 },
+    "selectors": {
+      "total": 1,
+      "averageComplexity": 1.0,
+      "maxComplexity": 1
+    },
+    "colors": {
+      "unique": 1,
+      "uniqueColors": ["#3b82f6"]
+    }
   },
-  "atrules": { ... },
-  "rules": {
-    "total": 1,
-    "size": { "total": 72 }
+  "note": "Summary metrics only. Use summaryOnly: false for complete 150+ metrics."
+}
+```
+
+#### `analyze_project_css`
+
+Analyze all CSS files in a project. Finds CSS files recursively, combines them, and provides project-wide analysis. **Framework-agnostic** - works with built CSS from any framework (SvelteKit, React, Vue, etc.).
+
+Returns **curated summary metrics by default** (lightweight, ~1-2k tokens). Use `includeFullAnalysis: true` for complete data (uses ~10k+ tokens).
+
+**Automatically excludes:**
+- `**/node_modules/**`
+- `**/*.min.css`
+
+**Parameters:**
+
+- `path` (string, required) - File path, directory, or glob pattern
+- `includeFullAnalysis` (boolean, optional) - Return full 150+ metrics instead of summary. Default: `false`
+- `exclude` (array of strings, optional) - Additional glob patterns to exclude
+
+**Examples:**
+
+```javascript
+// Analyze all CSS in a directory (summary - default, lightweight)
+analyze_project_css({ path: "dist" });
+
+// Full analysis with all 150+ metrics (uses more tokens)
+analyze_project_css({
+  path: "dist",
+  includeFullAnalysis: true
+});
+
+// Exclude additional patterns
+analyze_project_css({
+  path: "dist",
+  exclude: ["**/vendor/**", "**/*.legacy.css"]
+});
+
+// Analyze specific file
+analyze_project_css({ path: "public/styles.css" });
+
+// Use glob patterns
+analyze_project_css({ path: "dist/**/*.css" });
+```
+
+**Returns (default summary):**
+
+```json
+{
+  "files": {
+    "total": 5,
+    "analyzed": 5,
+    "errors": 0,
+    "list": [
+      { "path": "/path/to/style.css", "size": 2048 },
+      { "path": "/path/to/theme.css", "size": 1024 }
+    ]
   },
-  "selectors": {
-    "total": 1,
-    "specificity": { ... }
+  "summary": {
+    "stylesheet": {
+      "sourceLinesOfCode": 450,
+      "size": 12800
+    },
+    "rules": { "total": 85 },
+    "selectors": {
+      "total": 120,
+      "averageComplexity": 1.4,
+      "maxComplexity": 5
+    },
+    "colors": {
+      "unique": 12,
+      "uniqueColors": ["#3b82f6", "#10b981", ...]
+    },
+    "fontSizes": {
+      "unique": 8,
+      "uniqueSizes": ["1rem", "1.5rem", ...]
+    }
   },
-  "declarations": { ... },
-  "properties": { ... },
-  "values": {
-    "colors": { ... },
-    "fontSizes": { ... }
-  }
+  "note": "Summary metrics only. Use includeFullAnalysis: true for complete data."
 }
 ```
 
@@ -226,6 +310,14 @@ Once configured, you can ask Claude Code:
 
 > "Check the complexity of my selectors"
 
+**Project Analysis:**
+
+> "Analyze all CSS in my dist folder"
+
+> "What's the total complexity of my project's CSS?"
+
+> "Show me all colors used across my entire project"
+
 Claude will automatically use the MCP to fetch the latest MDN documentation and analyze CSS code.
 
 ## Development
@@ -245,13 +337,18 @@ npm link
 npm test
 ```
 
-## Performance
+## Performance & Limits
 
-With caching enabled:
-
+**Caching:**
 - **First fetch**: ~400-500ms (network + cache write)
 - **Cached fetch**: ~100ms (**~5x faster**)
 - **Cache size**: ~390KB for typical usage
+
+**Input Limits:**
+- **Max file size**: 10MB per CSS file
+- **Max total size**: 50MB combined
+- **Max files**: 500 CSS files per analysis
+- **Network timeout**: 10 seconds for MDN API calls
 
 ## Troubleshooting
 
