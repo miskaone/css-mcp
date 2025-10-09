@@ -9,6 +9,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import TurndownService from "turndown";
 import Database from "better-sqlite3";
+import { analyze } from "@projectwallace/css-analyzer";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { mkdirSync, existsSync } from "fs";
@@ -211,11 +212,30 @@ async function self_test() {
   const has_compat = Boolean(b.feature?.__compat);
   const support_keys = Object.keys(b.feature?.__compat?.support || {});
   console.error("bcd ok:", { bcd_id: b.bcd_id, has_compat, support_keys });
+
+  // Test analyze_css
+  const testCss = `
+    .container {
+      display: grid;
+      color: blue;
+      font-size: 16px;
+    }
+    .item {
+      color: #0000ff;
+    }
+  `;
+  const analysis = analyze(testCss);
+  console.error("analyze_css ok:", {
+    has_stylesheet: !!analysis.stylesheet,
+    rules_total: analysis.rules?.total,
+    colors_total: analysis.colors?.total,
+    has_metrics: !!analysis.__meta__,
+  });
 }
 
 // ---------- stdio server ----------
 async function start() {
-  const server = new McpServer({ name: "css", version: "1.0.2" });
+  const server = new McpServer({ name: "css", version: "1.1.0" });
 
   server.tool(
     "get_docs",
@@ -244,6 +264,16 @@ async function start() {
     { bcd_id: z.string().min(1) },
     async ({ bcd_id }) => {
       const result = await get_bcd_impl({ bcd_id });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "analyze_css",
+    'Analyze CSS code for quality, complexity, and design patterns. Provides 150+ metrics including selector complexity, specificity, color usage, font sizes, property patterns, and code quality indicators. Use this to identify issues, suggest improvements, or audit CSS codebases.',
+    { css: z.string().min(1) },
+    async ({ css }) => {
+      const result = analyze(css);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );

@@ -1,17 +1,34 @@
 # CSS MCP Server
 
-An MCP (Model Context Protocol) server that provides up-to-date CSS documentation from MDN, with intelligent caching.
+An MCP (Model Context Protocol) server that provides up-to-date CSS documentation from MDN and comprehensive CSS code analysis.
 
 ## Features
 
-Simple API - Just pass CSS property names like `"grid"`, `"flexbox"`, or `":has"`
-Official MDN Docs - Fetches documentation directly from MDN's API
-Markdown Conversion - Converts HTML documentation to clean, readable markdown
-Smart Caching - SQLite-based cache with 7-day TTL for blazing-fast responses
-Auto-normalization - Supports both simple slugs (`"grid"`) and full paths (`"Web/CSS/grid"`)
-Browser Compatibility - Includes browser support data from MDN's BCD
+**Documentation & Compatibility:**
+
+- Official MDN Docs - Fetches documentation directly from MDN's API
+- Browser Compatibility - Includes browser support data from MDN's BCD
+- Simple API - Just pass CSS property names like `"grid"`, `"flexbox"`, or `":has"`
+- Markdown Conversion - Converts HTML documentation to clean, readable markdown
+- Auto-normalization - Supports both simple slugs (`"grid"`) and full paths (`"Web/CSS/grid"`)
+- Smart Caching - SQLite-based cache with 7-day TTL for blazing-fast responses
+
+**CSS Analysis:**
+
+- 150+ Metrics - Comprehensive analysis of stylesheet quality and complexity
+- Design Patterns - Detect color palettes, font sizes, spacing patterns
+- Code Quality - Selector complexity, specificity analysis, property usage
+- Performance Insights - Identify overly complex selectors and redundant code
 
 ## Installation
+
+### For Claude Code
+
+Install via the Claude Code CLI:
+
+```bash
+claude mcp add css-mcp -- npx -y css-mcp
+```
 
 ### For MCP Clients (Claude Desktop, etc.)
 
@@ -107,6 +124,53 @@ get_browser_compatibility({ bcd_id: "css.properties.grid" });
 get_browser_compatibility({ bcd_id: "css.selectors.has" });
 ```
 
+#### `analyze_css`
+
+Analyze CSS code for quality, complexity, and design patterns. Returns 150+ metrics including stylesheet metadata, selector complexity, specificity analysis, color palettes, font sizes, and more.
+
+**Parameters:**
+
+- `css` (string) - CSS code to analyze
+
+**Example:**
+
+```javascript
+analyze_css({
+  css: `
+    .container {
+      display: grid;
+      color: #3b82f6;
+    }
+  `,
+});
+```
+
+**Returns:**
+
+```json
+{
+  "stylesheet": {
+    "sourceLinesOfCode": 5,
+    "size": 72
+  },
+  "atrules": { ... },
+  "rules": {
+    "total": 1,
+    "size": { "total": 72 }
+  },
+  "selectors": {
+    "total": 1,
+    "specificity": { ... }
+  },
+  "declarations": { ... },
+  "properties": { ... },
+  "values": {
+    "colors": { ... },
+    "fontSizes": { ... }
+  }
+}
+```
+
 ## Cache Management
 
 The server automatically:
@@ -146,13 +210,23 @@ bcd ok: { bcd_id: 'css.properties.grid', has_compat: true, ... }
 
 Once configured, you can ask Claude Code:
 
+**Documentation & Compatibility:**
+
 > "Use the CSS MCP to get documentation for flexbox"
 
 > "What browser support does :has selector have?"
 
 > "Explain how CSS grid works"
 
-Claude will automatically use the MCP to fetch the latest MDN documentation.
+**CSS Analysis:**
+
+> "Analyze this CSS and tell me what could be improved"
+
+> "What colors are used in my stylesheet?"
+
+> "Check the complexity of my selectors"
+
+Claude will automatically use the MCP to fetch the latest MDN documentation and analyze CSS code.
 
 ## Development
 
