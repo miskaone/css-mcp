@@ -158,7 +158,7 @@ Claude will automatically use the MCP to fetch the latest MDN documentation.
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/stolinski/css-mcp.git
 cd css-mcp
 
 # Install dependencies

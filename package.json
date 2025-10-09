@@ -30,6 +30,14 @@
   ],
   "author": "Scott Tolinski",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stolinski/css-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stolinski/css-mcp/issues"
+  },
+  "homepage": "https://github.com/stolinski/css-mcp#readme",
   "publishConfig": {
     "access": "public"
   }
