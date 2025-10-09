@@ -39,7 +39,9 @@ One click install:
 
 Install via VS Code CLI:
 
+```bash
 code --add-mcp '{\"name\":\"css\",\"command\":\"npx\",\"args\":[\"-y\",\"css-mcp\"],\"env\":{}}'
+```
 
 ### For MCP Clients (Claude Desktop, etc.)
 
