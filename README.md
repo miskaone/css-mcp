@@ -27,7 +27,7 @@ An MCP (Model Context Protocol) server that provides up-to-date CSS documentatio
 Install via the Claude Code CLI:
 
 ```bash
-claude mcp add css-mcp -- npx -y css-mcp
+claude mcp add css -- npx -y css-mcp
 ```
 
 ### For MCP Clients (Claude Desktop, etc.)
