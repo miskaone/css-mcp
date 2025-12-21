@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@projectwallace/css-analyzer": "^7.6.0",
+    "@projectwallace/css-analyzer": "^7.6.3",
     "better-sqlite3": "^12.4.1",
     "fast-glob": "^3.3.3",
     "turndown": "^7.2.1",
